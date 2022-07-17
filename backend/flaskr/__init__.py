@@ -8,7 +8,7 @@ import random
 from models import setup_db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
-def paginate_questons(request, selection):
+def paginate_questions(request, selection):
     page = request.args.get('page', 1, type=int)
     start = (page - 1) * QUESTIONS_PER_PAGE
     end = start + QUESTIONS_PER_PAGE
@@ -41,7 +41,7 @@ def create_app(test_config=None):
     @app.route('/questions')
     def get_questions():
         selection = Question.query.all()
-        current_questions = paginate_questons(request, selection)
+        current_questions = paginate_questions(request, selection)
 
         if len(current_questions) == 0:
             abort(404)
@@ -85,7 +85,7 @@ def create_app(test_config=None):
             question.insert()
 
             selection = Question.query.order_by(Question.id).all()
-            current_questions = paginate_questons(request, selection)
+            current_questions = paginate_questions(request, selection)
 
             return jsonify({
                 'success': True,
@@ -105,7 +105,7 @@ def create_app(test_config=None):
         if results == []:
             abort(404)
             
-        current_questions = paginate_questons(request, results)
+        current_questions = paginate_questions(request, results)
 
         return jsonify({
             'success': True,
@@ -116,7 +116,7 @@ def create_app(test_config=None):
     @app.route('/categories/<int:category_id>/questions')
     def get_questions_by_category(category_id):
         questions = Question.query.filter(Question.category==str(category_id)).all()
-        current_questions = paginate_questons(request, questions)
+        current_questions = paginate_questions(request, questions)
 
         return jsonify({
             'success': True,
@@ -131,13 +131,16 @@ def create_app(test_config=None):
         previous_questions = data.get('previous_questions')
         quiz_category = data.get('quiz_category')
 
+        if quiz_category is None or previous_questions is None:
+            abort(404)
+
         if quiz_category['id'] == 0:
             questions = Question.query.filter(
                 Question.id.notin_(previous_questions)).all()
         else:
             questions = Question.query.filter(
                 Question.id.notin_(previous_questions),
-                Question.category == str(quiz_category['id'])).all()
+                Question.category == quiz_category['id']).all()
 
         for question in questions:
             question = random.choice(questions)
